@@ -1,0 +1,57 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2>Task Details</h2>
+                    <div class="task-status <%= task.status.toLowerCase() %>">
+                        <%= task.status %>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Title</h5>
+                        <p class="lead"><%= task.title %></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p class="lead"><%= task.content %></p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Start Date</h5>
+                            <p><%= task.tdate.toLocaleDateString() %></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Due Date</h5>
+                            <p><%= task.ddate.toLocaleDateString() %></p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Created</h5>
+                        <p><%= task.createdAt.toLocaleString() %></p>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="/tasks" class="btn btn-secondary">Back to Tasks</a>
+                            <a href="/tasks/<%= task._id %>/edit" class="btn btn-warning">Edit Task</a>
+                        </div>
+                        <form action="/tasks/<%= task._id %>?_method=DELETE" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">
+                                Delete Task
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %> 

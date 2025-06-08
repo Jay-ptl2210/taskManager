@@ -1,0 +1,52 @@
+<%- include('partials/header') %>
+
+<div class="main-content">
+    <div class="landing-hero">
+        <div class="container">
+            <h1>Welcome to Task Manager</h1>
+            <p class="lead">Organize your tasks efficiently and boost your productivity</p>
+            <div class="cta-buttons">
+                <% if (!user) { %>
+                    <a href="/register" class="btn btn-primary btn-lg">Get Started</a>
+                    <a href="/login" class="btn btn-outline-primary btn-lg">Login</a>
+                <% } else { %>
+                    <a href="/tasks" class="btn btn-primary btn-lg">View My Tasks</a>
+                    <form action="/logout" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-outline-primary btn-lg">Logout</button>
+                    </form>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="container">
+            <h2 class="text-center mb-5">Features</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Task Management</h3>
+                        <p>Create, update, and organize your tasks with ease</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Due Dates</h3>
+                        <p>Set start and due dates to stay on track</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Progress Tracking</h3>
+                        <p>Monitor task status and completion</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %> 
