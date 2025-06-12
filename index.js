@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const methodOverride = require('method-override');
 const jwt = require('jsonwebtoken');
+const classifyTask = require('./utils/aiClassifier');
 require('dotenv').config();
 
 // Import models
@@ -15,7 +16,7 @@ const Task = require('./models/Task');
 const auth = require('./middleware/auth');
 
 // MongoDB Connection URI with fallback
-const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/task-manager';
+const mongoURI = process.env.MONGODB_URI ;
 console.log('Attempting to connect to MongoDB at:', mongoURI);
 
 // Connect to MongoDB
@@ -255,12 +256,18 @@ taskRouter.get('/new', (req, res) => {
 // Create task
 taskRouter.post('/', async (req, res) => {
     try {
+        // Call the AI to classify task content
+        const category = await classifyTask(req.body.content);
+
+        // Create task with predicted category
         const task = new Task({
             ...req.body,
             owner: req.user._id,
             tdate: new Date(req.body.tdate),
-            ddate: new Date(req.body.ddate)
+            ddate: new Date(req.body.ddate),
+            category: category
         });
+
         await task.save();
         res.redirect('/tasks');
     } catch (error) {
@@ -271,7 +278,6 @@ taskRouter.post('/', async (req, res) => {
         });
     }
 });
-
 // View task
 taskRouter.get('/:id', async (req, res) => {
     try {

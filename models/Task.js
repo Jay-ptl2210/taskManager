@@ -24,6 +24,10 @@ const taskSchema = new mongoose.Schema({
         required: true,
         ref: 'User'
     },
+    category:{
+        type:String,
+        default:"Uncategorized"
+    },
     createdAt: {
         type: Date,
         default: Date.now
