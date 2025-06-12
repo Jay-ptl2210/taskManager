@@ -247,6 +247,27 @@ taskRouter.get('/completed', async (req, res) => {
         res.redirect('/tasks');
     }
 });
+// Filter tasks by category (AI)
+taskRouter.get('/category/:category', async (req, res) => {
+    try {
+        const category = req.params.category;
+        const tasks = await Task.find({
+            owner: req.user._id,
+            category: category
+        }).sort({ createdAt: -1 });
+
+        res.render('tasks/index', {
+            tasks,
+            title: `${req.user.username}'s ${category} Tasks`,
+            filter: 'category',
+            selectedCategory: category
+        });
+    } catch (error) {
+        console.error('Error filtering tasks by category:', error);
+        res.redirect('/tasks');
+    }
+});
+
 
 // Create new task form
 taskRouter.get('/new', (req, res) => {

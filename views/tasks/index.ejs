@@ -4,21 +4,41 @@
     <div class="row">
         <div class="col-12">
             <!-- Page Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="mb-1"><%= title %></h1>
-                    <% if (filter === 'pending') { %>
-                        <p class="text-muted">Tasks that need your attention</p>
-                    <% } else if (filter === 'completed') { %>
-                        <p class="text-muted">Tasks you've accomplished</p>
-                    <% } else { %>
-                        <p class="text-muted">Overview of all your tasks</p>
-                    <% } %>
-                </div>
-                <a href="/tasks/new" class="btn btn-primary d-flex align-items-center">
-                    <i class="fas fa-plus me-2"></i> New Task
-                </a>
-            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="mb-1"><%= title %></h1>
+        <% if (filter === 'category') { %>
+            <p class="text-muted">Tasks in category: <strong><%= selectedCategory %></strong></p>
+        <% } else { %>
+            <p class="text-muted">Overview of all your tasks</p>
+        <% } %>
+    </div>
+
+    <!-- 🧾 Filter Dropdown and Clear Button -->
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <select class="form-select form-select-sm" style="width: 180px;" onchange="if(this.value) window.location='/tasks/category/' + this.value">
+            <option disabled selected>Filter by Category</option>
+            <option value="Bug">Bug</option>
+            <option value="Feature">Feature</option>
+            <option value="Content">Content</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Low Priority">Low Priority</option>
+        </select>
+
+        <% if (filter === 'category') { %>
+            <a href="/tasks" class="btn btn-outline-secondary btn-sm">
+                Clear Filter
+            </a>
+        <% } %>
+    </div>
+
+    <!-- ➕ New Task Button -->
+    <a href="/tasks/new" class="btn btn-primary d-flex align-items-center">
+        <i class="fas fa-plus me-2"></i> New Task
+    </a>
+</div>
+
+
 
             <!-- Task Stats - Only show on main dashboard -->
             <% if (filter === 'all' || !filter) { %>
