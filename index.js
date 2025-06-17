@@ -57,6 +57,46 @@ app.use(async (req, res, next) => {
     next();
 });
 
+app.post('/verify-email', async (req, res) => {
+  const { email, otp } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user || user.otp !== parseInt(otp) || user.otpExpires < Date.now()) {
+    return res.render('auth/verify-email', {
+      email,
+      error: 'Invalid or expired OTP'
+    });
+  }
+
+  // Mark email as verified
+  user.isVerified = true;
+  user.otp = null;
+  user.otpExpires = null;
+
+  // Generate JWT tokens
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  // Save tokens
+  await user.save();
+
+  // Set cookies
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 15 * 60 * 1000 // 15 minutes
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
+  // Redirect to tasks
+  res.redirect('/tasks');
+});
+
 // Routes
 app.get('/', (req, res) => {
     res.render('landing');
@@ -73,59 +113,52 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    try {
-        // Check if user already exists
-        const existingUser = await User.findOne({
-            $or: [
-                { username: req.body.username },
-                { email: req.body.email }
-            ]
-        });
+  try {
+    const existingUser = await User.findOne({
+      $or: [
+        { username: req.body.username },
+        { email: req.body.email }
+      ]
+    });
 
-        if (existingUser) {
-            let errorMessage = '';
-            if (existingUser.username === req.body.username) {
-                errorMessage = 'Username is already taken. Please choose a different username.';
-            } else {
-                errorMessage = 'Email is already registered. Please use a different email.';
-            }
-            return res.render('auth/register', { 
-                error: errorMessage,
-                data: req.body
-            });
-        }
-
-        const user = new User(req.body);
-        await user.save();
-        
-        // Generate tokens
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-        
-        // Save refresh token to database
-        await user.save();
-        
-        // Set cookies
-        res.cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 15 * 60 * 1000 // 15 minutes
-        });
-        
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-        
-        res.redirect('/tasks');
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.render('auth/register', { 
-            error: 'An error occurred during registration',
-            data: req.body
-        });
+    if (existingUser) {
+      let errorMessage = '';
+      if (existingUser.username === req.body.username) {
+        errorMessage = 'Username is already taken.';
+      } else {
+        errorMessage = 'Email is already registered.';
+      }
+      return res.render('auth/register', {
+        error: errorMessage,
+        data: req.body
+      });
     }
+
+    // Create new user
+    const user = new User(req.body);
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    user.otp = otp;
+    user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await user.save();
+
+    // Send OTP via email
+    const sendOTP = require('./utils/sendOTP');
+    await sendOTP(user.email, otp);
+
+    // Redirect to verify email
+    res.redirect(`/verify-email?email=${user.email}`);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.render('auth/register', {
+      error: 'An error occurred during registration',
+      data: req.body
+    });
+  }
+});
+app.get('/verify-email', (req, res) => {
+  res.render('auth/verify-email', { email: req.query.email, error: null });
 });
 
 app.get('/login', (req, res) => {
@@ -144,7 +177,6 @@ app.post('/login', async (req, res) => {
                 data: { email: req.body.email }
             });
         }
-        
         // Generate tokens
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();

@@ -22,7 +22,11 @@ const userSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String
-    }
+    },
+    otp: Number,
+    otpExpires: Date,   
+    isVerified: { type: Boolean, default: false }
+
 }, {
     timestamps: true
 });
