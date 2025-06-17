@@ -37,7 +37,9 @@ Built during my first week of internship, this project taught me key backend ski
 
 - Secure user authentication (JWT + bcrypt)  
 - CRUD operations for tasks  
-- Server-side rendering with EJS  
+- Server-side rendering with EJS
+- AI-powered task categorization
+- Email OTP-based verification during signup
 - Session management and flash messaging  
 - Deployment on Render cloud platform
 
@@ -58,7 +60,9 @@ Built during my first week of internship, this project taught me key backend ski
 ✔️ User registration & login with secure authentication  
 ✔️ Add, view, update, and delete tasks  
 ✔️ Mark tasks as completed or pending  
-✔️ Filter tasks by status  
+✔️ Filter tasks by status or category   
+✔️ AI-based task categorization using Hugging Face zero-shot classification (e.g., Bug, Urgent, Low Priority)   
+✔️ Email verification using OTP before login access   
 ✔️ Flash messages for user feedback  
 ✔️ RESTful routes & middleware  
 ✔️ Live deployment with persistent data  
@@ -73,7 +77,9 @@ Built during my first week of internship, this project taught me key backend ski
 - MongoDB & Mongoose  
 - EJS  
 - JWT & bcrypt  
-- Express-session & connect-flash  
+- Express-session & connect-flash
+- Hugging Face Transformers (for AI task classification)
+- Nodemailer (for email OTP verification) 
 
 **Deployment:**  
 - Render
