@@ -437,59 +437,6 @@ app.use((err, req, res, next) => {
     res.status(500).render('error', { error: 'Something went wrong!' });
 });
 
-const cron = require('node-cron');
-const sendReminder = require('./utils/mailer');
-const { time } = require('console');
-
-// Your deployed Task Manager app URL
-const APP_URL = 'https://taskmanagerbyjayptl.onrender.com';
-
-// Morning Reminder: Every day at 8:00 AM
-cron.schedule('0 8 * * *', async () => {
-  console.log("Running morning task reminder...");
-  const users = await User.find({ isVerified: true });
-  users.forEach(user => {
-    sendReminder(
-      user.email,
-      '📝 Morning Task Reminder',
-      `<p>🌞 Good morning ${user.username},</p>
-    <p>It’s a new day and a fresh start! Let's set the tone for a productive day.</p>
-    <p>
-        ➕ <a href="https://taskmanagerbyjayptl.onrender.com/tasks/new" target="_blank" style="text-decoration: none; color: #007BFF;">
-        Click here to add your tasks for today
-        </a> 🗒️
-    </p>
-
-    <p>Wishing you success and focus throughout the day! 💪</p>
-
-    <p style="margin-top: 20px;">– 🚀 Task Manager by Jay Patel</p>
-`
-    );
-  });
-}, {timezone: "Asia/Kolkata"});
-
-// Evening Reminder: Every day at 6:00 PM
-cron.schedule('0 18 * * *', async () => {
-  console.log("Running evening status reminder...");
-  const users = await User.find({ isVerified: true });
-  users.forEach(user => {
-    sendReminder(
-      user.email,
-      '🌙 Quick Reminder: Update Your Tasks',
-      `<p>🌆 Good evening ${user.username},</p>
-      <p>Hope you had a productive day! Let’s reflect and mark your progress. ✅</p>
-      <p>
-        🖊️ <a href="${APP_URL}/tasks" target="_blank" style="text-decoration: none; color: #007BFF;">
-          Click here to update your task status
-        </a> 📌
-      </p>
-      <p>Keep building strong habits, one step at a time. 🔄</p>
-      <p style="margin-top: 20px;">– ✨ Task Manager by Jay Patel</p>`
-    );
-  });
-}, { timezone: "Asia/Kolkata" }); // ✅ Correct placement
-
-
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

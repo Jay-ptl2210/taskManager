@@ -10,13 +10,13 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendReminder = async (to, subject, text) => {
+const sendReminder = async (to, subject, html) => {
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Task Manager by Jay Patel" <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      text
+      html // ✅ Render HTML instead of plain text
     });
   } catch (err) {
     console.error('Error sending reminder email:', err);
