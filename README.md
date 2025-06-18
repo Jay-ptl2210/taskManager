@@ -110,6 +110,13 @@ JWT_ACCESS_SECRET= write your access secrate
 JWT_REFRESH_SECRET=write your refresh secrate
 
 COOKIE_SECRET= write your cookie secrate
+
+HUGGINGFACE_API_KEY=write your huggingface api
+
+EMAIL_USER=write your email id
+EMAIL_PASS=write your app password which is provide by google
+
+SESSION_SECRET=write your session secrate
 ```
 ### Start the server:
 ```
