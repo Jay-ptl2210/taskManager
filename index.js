@@ -8,6 +8,16 @@ const jwt = require('jsonwebtoken');
 const classifyTask = require('./utils/aiClassifier');
 require('dotenv').config();
 
+
+const session = require('express-session');
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // set `true` in production with HTTPS
+}));
+
 // Import models
 const User = require('./models/User');
 const Task = require('./models/Task');
@@ -59,41 +69,52 @@ app.use(async (req, res, next) => {
 
 app.post('/verify-email', async (req, res) => {
   const { email, otp } = req.body;
-  const user = await User.findOne({ email });
+  const sessionUser = req.session.tempUser;
 
-  if (!user || user.otp !== parseInt(otp) || user.otpExpires < Date.now()) {
+  if (!sessionUser || sessionUser.email !== email) {
     return res.render('auth/verify-email', {
       email,
-      error: 'Invalid or expired OTP'
+      error: 'Session expired or invalid access.'
     });
   }
 
-  // Mark email as verified
-  user.isVerified = true;
-  user.otp = null;
-  user.otpExpires = null;
+  if (parseInt(otp) !== sessionUser.otp || Date.now() > req.session.otpExpires) {
+    return res.render('auth/verify-email', {
+      email,
+      error: 'Invalid or expired OTP.'
+    });
+  }
 
-  // Generate JWT tokens
+  // Save the user now
+  const user = new User({
+    username: sessionUser.username,
+    email: sessionUser.email,
+    password: sessionUser.password,
+    isVerified: true
+  });
+
+  await user.save();
+
+  // Generate JWTs
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
 
-  // Save tokens
-  await user.save();
+  // Clear session
+  req.session.tempUser = null;
+  req.session.otpExpires = null;
 
-  // Set cookies
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 15 * 60 * 1000
   });
 
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000
   });
 
-  // Redirect to tasks
   res.redirect('/tasks');
 });
 
@@ -114,41 +135,35 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   try {
+    const { username, email, password } = req.body;
+
     const existingUser = await User.findOne({
-      $or: [
-        { username: req.body.username },
-        { email: req.body.email }
-      ]
+      $or: [{ username }, { email }]
     });
 
     if (existingUser) {
-      let errorMessage = '';
-      if (existingUser.username === req.body.username) {
-        errorMessage = 'Username is already taken.';
-      } else {
-        errorMessage = 'Email is already registered.';
-      }
+      const errorMessage = existingUser.username === username
+        ? 'Username is already taken.'
+        : 'Email is already registered.';
       return res.render('auth/register', {
         error: errorMessage,
         data: req.body
       });
     }
 
-    // Create new user
-    const user = new User(req.body);
-
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-    user.otp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-    await user.save();
+
+    // Save to session, not database
+    req.session.tempUser = { username, email, password, otp };
+    req.session.otpExpires = Date.now() + 5 * 60 * 1000;
 
     // Send OTP via email
     const sendOTP = require('./utils/sendOTP');
-    await sendOTP(user.email, otp);
+    await sendOTP(email, otp);
 
-    // Redirect to verify email
-    res.redirect(`/verify-email?email=${user.email}`);
+    // Redirect to OTP verification
+    res.redirect(`/verify-email?email=${email}`);
   } catch (error) {
     console.error('Registration error:', error);
     res.render('auth/register', {
@@ -171,33 +186,41 @@ app.get('/login', (req, res) => {
 app.post('/login', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email });
+
         if (!user || !(await user.comparePassword(req.body.password))) {
             return res.render('auth/login', { 
                 error: 'Invalid credentials',
                 data: { email: req.body.email }
             });
         }
-        // Generate tokens
+
+        // 🔒 CHECK EMAIL VERIFICATION
+        if (!user.isVerified) {
+            return res.render('auth/login', {
+                error: 'Email not verified. please veryfied your email using register',
+                data: { email: req.body.email }
+            });
+        }
+
+        // ✅ Generate tokens
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
-        
-        // Save refresh token to database
         await user.save();
-        
-        // Set cookies
+
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 15 * 60 * 1000 // 15 minutes
+            maxAge: 15 * 60 * 1000
         });
-        
+
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
-        
+
         res.redirect('/tasks');
+
     } catch (error) {
         console.error('Login error:', error);
         res.render('auth/login', { 
@@ -206,6 +229,7 @@ app.post('/login', async (req, res) => {
         });
     }
 });
+
 
 app.post('/logout', auth, async (req, res) => {
     try {
