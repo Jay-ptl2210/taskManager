@@ -7,6 +7,7 @@ const methodOverride = require('method-override');
 const jwt = require('jsonwebtoken');
 const classifyTask = require('./utils/aiClassifier');
 require('dotenv').config();
+const sendReminder = require('./utils/mailer');
 
 
 const session = require('express-session');
@@ -17,6 +18,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false } // set `true` in production with HTTPS
 }));
+
+
 
 // Import models
 const User = require('./models/User');
@@ -38,6 +41,36 @@ mongoose.connect(mongoURI)
         console.error('Error connecting to MongoDB:', error.message);
         process.exit(1);
     });
+
+app.get('/trigger-reminder', async (req, res) => {
+  const token = req.query.token;
+
+  if (token !== process.env.REMINDER_TRIGGER_TOKEN) {
+    return res.status(403).send('Unauthorized');
+  }
+
+  const users = await User.find({ isVerified: true });
+
+  // Morning
+  const hour = new Date().getHours();
+  const isMorning = hour < 12;
+
+  users.forEach(user => {
+    const subject = isMorning ? '📝 Morning Task Reminder' : '🌙 Evening Task Reminder';
+    const message = isMorning
+      ? `<p>🌞 Good morning ${user.username},</p>
+         <p>Time to add today's tasks ➕ <a href="https://taskmanagerbyjayptl.onrender.com/tasks/new">Add Now</a> 🗒️</p>
+         <p>– 🚀 Task Manager by Jay Patel</p>`
+      : `<p>🌆 Good evening ${user.username},</p>
+         <p>Don’t forget to update your progress ✅ <a href="https://taskmanagerbyjayptl.onrender.com/tasks">Update Now</a> 📌</p>
+         <p>– ✨ Task Manager by Jay Patel</p>`;
+
+    sendReminder(user.email, subject, message);
+  });
+
+  res.send('Reminders sent!');
+});
+
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -436,6 +469,7 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).render('error', { error: 'Something went wrong!' });
 });
+
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
