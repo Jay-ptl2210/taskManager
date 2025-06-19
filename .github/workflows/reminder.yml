@@ -1,0 +1,16 @@
+name: Send Task Reminders
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 7:30 AM IST (2:00 AM UTC)
+    - cron: '0 12 * * *' # 5:30 PM IST (12:00 PM UTC)
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send HTTP request to trigger reminder
+        run: |
+          curl -X GET "https://taskmanagerbyjayptl.onrender.com/trigger-reminder?token=task_manager_reminder_trigger_token_2025"
+
